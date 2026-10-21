@@ -539,6 +539,8 @@ export function MetallicSculpture3D({
 
       animationFrameId = requestAnimationFrame(animate);
 
+      const delta = Math.min(clock.getDelta(), 0.1);
+      const deltaFactor = delta * 60; // Frame-rate independent scaling
       const elapsed = clock.getElapsedTime();
       const reducedMotion = reducedMotionQuery.matches;
 
@@ -548,23 +550,23 @@ export function MetallicSculpture3D({
         sculptureGroup.position.x = Math.sin(elapsed * 0.35) * 0.02;
 
         sculptureGroup.rotation.y = elapsed * 0.08;
-        sculptureGroup.rotation.z =
-          Math.sin(elapsed * 0.3) * 0.025;
+        sculptureGroup.rotation.z = Math.sin(elapsed * 0.3) * 0.025;
 
-        // Knot inertia and continuous rotation
+        // Knot inertia and continuous rotation (fluid 60/120/144Hz damping)
         if (!isDragging) {
-          dragRotationY += dragVelocityX;
-          dragRotationX += dragVelocityY;
+          dragRotationY += dragVelocityX * deltaFactor;
+          dragRotationX += dragVelocityY * deltaFactor;
 
-          dragVelocityX *= 0.95;
-          dragVelocityY *= 0.95;
+          const decay = Math.pow(0.95, deltaFactor);
+          dragVelocityX *= decay;
+          dragVelocityY *= decay;
 
-          dragRotationY += 0.0025;
+          dragRotationY += 0.0025 * deltaFactor;
         }
 
         // Independent orbital movement
-        ring1.rotation.z += 0.002;
-        ring2.rotation.y -= 0.0015;
+        ring1.rotation.z += 0.002 * deltaFactor;
+        ring2.rotation.y -= 0.0015 * deltaFactor;
 
         // Satellite movement
         satellites.forEach((satellite, index) => {
@@ -632,6 +634,7 @@ export function MetallicSculpture3D({
       camera.aspect = initialWidth / initialHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(initialWidth, initialHeight);
+      renderer.render(scene, camera);
     }
 
     animate();

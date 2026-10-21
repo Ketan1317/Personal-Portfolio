@@ -293,11 +293,32 @@ function LeetCodeHeatmap({
 }
 
 export function EngineeringActivitySection() {
-  const [ghData, setGhData] = useState<GitHubData | null>(null);
-  const [ghLoading, setGhLoading] = useState(true);
+  const [ghData, setGhData] = useState<GitHubData>({
+    ok: true,
+    user: {
+      login: "Ketan1317",
+      name: "Ketan Goyal",
+      public_repos: 24,
+      followers: 5,
+      following: 3,
+      avatar_url: "https://github.com/Ketan1317.png",
+      bio: "CS undergrad at Chitkara University (CUIET)",
+      html_url: "https://github.com/Ketan1317",
+    },
+    totalContributions: 346,
+    contributions: [],
+  });
+  const [ghLoading, setGhLoading] = useState(false);
 
-  const [lcData, setLcData] = useState<LeetCodeData | null>(null);
-  const [lcLoading, setLcLoading] = useState(true);
+  const [lcData, setLcData] = useState<LeetCodeData>({
+    username: "ketangoyal1212",
+    solved: { all: 600, easy: 240, medium: 310, hard: 50 },
+    activeDays: 329,
+    streak: 88,
+    ranking: null,
+    calendar: {},
+  });
+  const [lcLoading, setLcLoading] = useState(false);
 
   useEffect(() => {
     // Fetch GitHub Data

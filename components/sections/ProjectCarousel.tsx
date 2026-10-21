@@ -138,15 +138,21 @@ function ProjectCard({
     }
   };
 
+  const rafRef = useRef<number | null>(null);
+
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!isActive || reducedMotion) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width - 0.5) * 12;
     const y = ((e.clientY - rect.top) / rect.height - 0.5) * 12;
-    setMouseParallax({ x, y });
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(() => {
+      setMouseParallax({ x, y });
+    });
   };
 
   const handleMouseLeave = () => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
     setMouseParallax({ x: 0, y: 0 });
   };
 
@@ -176,7 +182,7 @@ function ProjectCard({
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       className={cn(
-        "absolute cursor-pointer will-change-transform select-none rounded-2xl overflow-hidden shadow-2xl",
+        "absolute cursor-pointer will-change-transform select-none rounded-2xl overflow-hidden shadow-2xl transform-gpu",
         "border transition-colors duration-300",
         isActive
           ? "border-[#C6A76A]/60 shadow-[0_16px_50px_rgba(0,0,0,0.85)] ring-1 ring-[#C6A76A]/40"
@@ -185,6 +191,8 @@ function ProjectCard({
       style={{
         width: cardWidth,
         aspectRatio: "16/9",
+        backfaceVisibility: "hidden",
+        WebkitBackfaceVisibility: "hidden",
         ...transformStyle,
       }}
       role="group"

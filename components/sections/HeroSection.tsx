@@ -1,31 +1,11 @@
 "use client";
 
-import { useEffect, useRef } from "react";
 import { ArrowDown, Download } from "lucide-react";
 import { PROFILE, SOCIAL_LINKS } from "@/lib/data";
 import { getSocialIcon } from "@/components/ui/SocialIcons";
 import { MetallicSculpture3D } from "@/components/ui/MetallicSculpture3D";
 
 export function HeroSection() {
-  const headlineRef = useRef<HTMLHeadingElement>(null);
-
-  useEffect(() => {
-    const prefersReducedMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-    if (prefersReducedMotion || !headlineRef.current) return;
-
-    const el = headlineRef.current;
-    el.style.opacity = "0";
-    el.style.transform = "translateY(16px)";
-    const t = setTimeout(() => {
-      el.style.transition = "opacity 0.6s ease, transform 0.6s ease";
-      el.style.opacity = "1";
-      el.style.transform = "translateY(0)";
-    }, 100);
-    return () => clearTimeout(t);
-  }, []);
-
   const scrollToProjects = () => {
     document.querySelector("#projects")?.scrollIntoView({ behavior: "smooth" });
   };
@@ -52,7 +32,6 @@ export function HeroSection() {
           <div className="lg:col-span-7 space-y-6">
             <div className="space-y-2">
               <h1
-                ref={headlineRef}
                 className="text-4xl sm:text-6xl xl:text-7xl font-bold tracking-tight text-text-primary leading-[1.02]"
               >
                 <span>Engineering systems</span>

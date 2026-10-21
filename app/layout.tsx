@@ -9,6 +9,7 @@ const michroma = Michroma({
   subsets: ["latin"],
   weight: ["400"],
   display: "swap",
+  preload: true,
 });
 
 const spaceGrotesk = Space_Grotesk({
@@ -16,6 +17,7 @@ const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
   display: "swap",
+  preload: true,
 });
 
 const dmMono = DM_Mono({
@@ -23,6 +25,7 @@ const dmMono = DM_Mono({
   subsets: ["latin"],
   weight: ["300", "400", "500"],
   display: "swap",
+  preload: true,
 });
 
 export const metadata: Metadata = {
