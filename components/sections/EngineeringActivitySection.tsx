@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import Image from "next/image";
 import {
   GitBranch,
@@ -8,8 +8,12 @@ import {
   Code2,
   Calendar,
   Flame,
+  ChevronLeft,
+  ChevronRight,
+  ArrowRight,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { LEETCODE_CALENDAR_FALLBACK } from "@/lib/data";
 
 type GitHubUser = {
   login: string;
@@ -193,99 +197,288 @@ function GitHubCommitChart({
 // ── LeetCode Contribution Heatmap Chart ──────────────────────────
 function LeetCodeHeatmap({
   calendar,
+  activeDays = 329,
 }: {
   calendar: Record<string, number>;
+  activeDays?: number;
+  streak?: number;
 }) {
-  const days = useMemo(() => {
-    const result: Array<{ date: string; count: number; timestamp: number }> = [];
-    const baseUtc = 1776556800000; // Static UTC baseline for stable prerender
-    const dayMs = 24 * 60 * 60 * 1000;
-    const numDays = 280; // 40 weeks
+  const sliderRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeftState, setScrollLeftState] = useState(0);
+  const [hoveredDay, setHoveredDay] = useState<{ date: string; count: number } | null>(null);
 
-    for (let i = numDays - 1; i >= 0; i--) {
-      const dayTimestamp = Math.floor((baseUtc - i * dayMs) / 1000);
-      let count = calendar[String(dayTimestamp)] ?? 0;
+  const { weeks, monthHeaders, activeCount } = useMemo(() => {
+    const cal = Object.keys(calendar).length > 0 ? calendar : LEETCODE_CALENDAR_FALLBACK;
+    const timestamps = Object.keys(cal)
+      .map(Number)
+      .filter((n) => !isNaN(n));
+    const maxTs = timestamps.length > 0 ? Math.max(...timestamps) : 1792454400; // 2026-10-20
+    const endDate = new Date(maxTs * 1000);
+    const endDayOfWeek = endDate.getUTCDay();
+    const daysToSaturday = (6 - endDayOfWeek + 7) % 7;
+    const gridEndUtc = new Date(
+      Date.UTC(
+        endDate.getUTCFullYear(),
+        endDate.getUTCMonth(),
+        endDate.getUTCDate() + daysToSaturday,
+      ),
+    );
 
-      if (count === 0) {
-        for (const [key, val] of Object.entries(calendar)) {
-          const k = Number(key);
-          if (Math.abs(k - dayTimestamp) < 43200) {
-            count = val;
-            break;
-          }
+    const numWeeks = 53;
+    const totalDaysCount = numWeeks * 7;
+    const gridStartUtc = new Date(
+      gridEndUtc.getTime() - (totalDaysCount - 1) * 86400000,
+    );
+
+    const weekList: Array<
+      Array<{
+        date: string;
+        displayDate: string;
+        count: number;
+        timestamp: number;
+      }>
+    > = [];
+    const months: Array<{ label: string; weekIndex: number }> = [];
+    let lastMonth = -1;
+    let active = 0;
+
+    for (let w = 0; w < numWeeks; w++) {
+      const weekDays: typeof weekList[0] = [];
+      for (let d = 0; d < 7; d++) {
+        const cur = new Date(gridStartUtc.getTime() + (w * 7 + d) * 86400000);
+        const daySec = Math.floor(cur.getTime() / 1000);
+        const count = cal[String(daySec)] ?? 0;
+        if (count > 0) active++;
+
+        const m = cur.getUTCMonth();
+        if (m !== lastMonth && d <= 3) {
+          lastMonth = m;
+          months.push({
+            label: cur.toLocaleDateString("en-US", {
+              month: "short",
+              timeZone: "UTC",
+            }),
+            weekIndex: w,
+          });
         }
-      }
 
-      const d = new Date(dayTimestamp * 1000);
-      result.push({
-        date: d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }),
-        count,
-        timestamp: dayTimestamp,
-      });
+        weekDays.push({
+          date: cur.toISOString().split("T")[0],
+          displayDate: cur.toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+            timeZone: "UTC",
+          }),
+          count,
+          timestamp: daySec,
+        });
+      }
+      weekList.push(weekDays);
     }
-    return result;
+
+    return {
+      weeks: weekList,
+      monthHeaders: months,
+      activeCount: active,
+    };
   }, [calendar]);
 
-  const weeks = useMemo(() => {
-    const cols: Array<typeof days> = [];
-    for (let i = 0; i < days.length; i += 7) {
-      cols.push(days.slice(i, i + 7));
+  // Smooth slide buttons
+  const slide = useCallback((direction: "left" | "right") => {
+    if (!sliderRef.current) return;
+    const offset = direction === "left" ? -280 : 280;
+    sliderRef.current.scrollBy({ left: offset, behavior: "smooth" });
+  }, []);
+
+  const slideToRecent = useCallback(() => {
+    if (!sliderRef.current) return;
+    sliderRef.current.scrollTo({
+      left: sliderRef.current.scrollWidth,
+      behavior: "smooth",
+    });
+  }, []);
+
+  // Slide to recent on mount
+  useEffect(() => {
+    if (sliderRef.current) {
+      sliderRef.current.scrollLeft = sliderRef.current.scrollWidth;
     }
-    return cols;
-  }, [days]);
+  }, []);
+
+  // Mouse Drag-to-Slide handlers
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!sliderRef.current) return;
+    setIsDragging(true);
+    setStartX(e.pageX - sliderRef.current.offsetLeft);
+    setScrollLeftState(sliderRef.current.scrollLeft);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isDragging || !sliderRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - sliderRef.current.offsetLeft;
+    const walk = (x - startX) * 1.5;
+    sliderRef.current.scrollLeft = scrollLeftState - walk;
+  };
+
+  const stopDragging = () => {
+    setIsDragging(false);
+  };
 
   return (
     <div className="space-y-3 pt-2">
-      <div className="flex items-center justify-between text-xs font-mono text-text-tertiary">
-        <span className="flex items-center gap-1.5 text-text-primary font-semibold">
-          <Calendar size={13} className="text-accent-lime" />
-          LEETCODE SUBMISSION HEATMAP
-        </span>
-        <span className="text-[11px] text-accent-lime font-semibold">
-          {Object.keys(calendar).length} ACTIVE DAYS RECORDED
-        </span>
-      </div>
-
-      <div className="p-4 rounded-xl border border-border-default bg-bg-surface overflow-x-auto shadow-inner">
-        <div className="flex gap-1.5 min-w-[650px]">
-          {weeks.map((week, wIdx) => (
-            <div key={wIdx} className="flex flex-col gap-1.5">
-              {week.map((day) => {
-                const count = day.count;
-                let bg = "bg-bg-elevated/70 border border-border-subtle/40";
-                if (count >= 12) {
-                  bg = "bg-emerald-400 border border-emerald-300 shadow-[0_0_6px_rgba(52,211,153,0.5)]";
-                } else if (count >= 6) {
-                  bg = "bg-emerald-500/80 border border-emerald-500";
-                } else if (count >= 3) {
-                  bg = "bg-emerald-500/50 border border-emerald-500/60";
-                } else if (count >= 1) {
-                  bg = "bg-emerald-500/25 border border-emerald-500/35";
-                }
-
-                return (
-                  <div
-                    key={day.timestamp}
-                    title={`${day.date}: ${count} submission${count === 1 ? "" : "s"}`}
-                    className={`w-3 h-3 rounded-[3px] transition-all duration-150 hover:scale-150 cursor-pointer ${bg}`}
-                  />
-                );
-              })}
-            </div>
-          ))}
+      {/* Header with Title, Stats & Interactive Slide Controls */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono text-text-tertiary">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="flex items-center gap-1.5 text-text-primary font-semibold">
+            <Calendar size={13} className="text-emerald-400" />
+            LEETCODE SUBMISSION HEATMAP
+          </span>
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+            {activeDays || activeCount} ACTIVE DAYS
+          </span>
         </div>
 
-        {/* Legend */}
-        <div className="flex items-center justify-between pt-3 mt-3 border-t border-border-subtle/50 text-[10px] font-mono text-text-tertiary">
-          <span>Less active</span>
+        {/* Sliding Navigation Controls */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={slideToRecent}
+            className="text-[11px] font-mono text-text-secondary hover:text-[#C6A76A] transition-colors flex items-center gap-1 px-2.5 py-1 rounded-lg border border-border-default bg-bg-surface hover:bg-bg-elevated cursor-pointer shadow-xs"
+            title="Slide to most recent submissions"
+          >
+            <span>Slide to Recent</span>
+            <ArrowRight size={11} />
+          </button>
           <div className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-[2px] bg-bg-elevated/70 border border-border-subtle/40" />
-            <span className="w-2.5 h-2.5 rounded-[2px] bg-emerald-500/25 border border-emerald-500/35" />
-            <span className="w-2.5 h-2.5 rounded-[2px] bg-emerald-500/50 border border-emerald-500/60" />
-            <span className="w-2.5 h-2.5 rounded-[2px] bg-emerald-500/80 border border-emerald-500" />
-            <span className="w-2.5 h-2.5 rounded-[2px] bg-emerald-400 border border-emerald-300" />
+            <button
+              type="button"
+              onClick={() => slide("left")}
+              className="p-1.5 rounded-lg border border-border-default bg-bg-surface hover:bg-bg-elevated text-text-secondary hover:text-text-primary transition-colors cursor-pointer shadow-xs"
+              aria-label="Slide heatmap left"
+              title="Slide earlier"
+            >
+              <ChevronLeft size={14} />
+            </button>
+            <button
+              type="button"
+              onClick={() => slide("right")}
+              className="p-1.5 rounded-lg border border-border-default bg-bg-surface hover:bg-bg-elevated text-text-secondary hover:text-text-primary transition-colors cursor-pointer shadow-xs"
+              aria-label="Slide heatmap right"
+              title="Slide later"
+            >
+              <ChevronRight size={14} />
+            </button>
           </div>
-          <span>More active</span>
+        </div>
+      </div>
+
+      {/* Main Sliding Heatmap Card */}
+      <div className="relative rounded-2xl border border-border-default bg-bg-surface p-4 sm:p-5 shadow-inner">
+        <div
+          ref={sliderRef}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={stopDragging}
+          onMouseLeave={() => {
+            stopDragging();
+            setHoveredDay(null);
+          }}
+          className={`overflow-x-auto select-none ${
+            isDragging ? "cursor-grabbing" : "cursor-grab"
+          }`}
+          style={{
+            scrollbarWidth: "thin",
+            WebkitOverflowScrolling: "touch",
+          }}
+        >
+          {/* Top Month Labels Header (Synchronized with 53-week columns) */}
+          <div className="flex gap-1.5 min-w-[760px] mb-2 text-[10px] font-mono text-text-tertiary h-4 relative">
+            {monthHeaders.map((m) => (
+              <span
+                key={`${m.label}-${m.weekIndex}`}
+                className="absolute"
+                style={{ left: `${m.weekIndex * 14}px` }}
+              >
+                {m.label}
+              </span>
+            ))}
+          </div>
+
+          {/* 53 Columns of 7 Days */}
+          <div className="flex gap-1.5 min-w-[760px] pt-1">
+            {weeks.map((week, wIdx) => (
+              <div key={wIdx} className="flex flex-col gap-1.5">
+                {week.map((day) => {
+                  const count = day.count;
+                  let bg = "bg-bg-elevated/70 border border-border-subtle/50";
+                  if (count >= 12) {
+                    bg = "bg-emerald-400 border border-emerald-300 shadow-[0_0_8px_rgba(52,211,153,0.7)] scale-110";
+                  } else if (count >= 6) {
+                    bg = "bg-emerald-500 border border-emerald-400";
+                  } else if (count >= 3) {
+                    bg = "bg-emerald-500/75 border border-emerald-500/90";
+                  } else if (count >= 1) {
+                    bg = "bg-emerald-500/35 border border-emerald-500/45";
+                  }
+
+                  return (
+                    <div
+                      key={day.timestamp}
+                      onMouseEnter={() => setHoveredDay({ date: day.displayDate, count })}
+                      title={`${day.displayDate}: ${count} submission${count === 1 ? "" : "s"}`}
+                      className={`w-3 h-3 rounded-[3px] transition-all duration-150 hover:scale-150 cursor-pointer ${bg}`}
+                    />
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Bottom Bar: Live Hover Detail + Legend */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-4 mt-3 border-t border-border-subtle/50 text-[11px] font-mono text-text-tertiary gap-2">
+          <div className="text-text-secondary h-4 flex items-center min-w-0">
+            {hoveredDay ? (
+              <span className="text-[#C6A76A] font-semibold truncate">
+                {hoveredDay.count} submission{hoveredDay.count === 1 ? "" : "s"} on {hoveredDay.date}
+              </span>
+            ) : (
+              <span className="text-text-tertiary">
+                ← Drag to slide or use arrows to view all 365 days →
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <span>Less</span>
+            <div className="flex items-center gap-1">
+              <span
+                className="w-2.5 h-2.5 rounded-[2px] bg-bg-elevated/70 border border-border-subtle/50"
+                title="0 submissions"
+              />
+              <span
+                className="w-2.5 h-2.5 rounded-[2px] bg-emerald-500/35 border border-emerald-500/45"
+                title="1-2 submissions"
+              />
+              <span
+                className="w-2.5 h-2.5 rounded-[2px] bg-emerald-500/75 border border-emerald-500/90"
+                title="3-5 submissions"
+              />
+              <span
+                className="w-2.5 h-2.5 rounded-[2px] bg-emerald-500 border border-emerald-400"
+                title="6-11 submissions"
+              />
+              <span
+                className="w-2.5 h-2.5 rounded-[2px] bg-emerald-400 border border-emerald-300"
+                title="12+ submissions"
+              />
+            </div>
+            <span>More</span>
+          </div>
         </div>
       </div>
     </div>
@@ -316,7 +509,7 @@ export function EngineeringActivitySection() {
     activeDays: 329,
     streak: 88,
     ranking: null,
-    calendar: {},
+    calendar: LEETCODE_CALENDAR_FALLBACK,
   });
   const [lcLoading, setLcLoading] = useState(false);
 
@@ -344,7 +537,7 @@ export function EngineeringActivitySection() {
           solved: { all: 760, easy: 294, medium: 387, hard: 79 },
           activeDays: 329,
           streak: 88,
-          calendar: {},
+          calendar: LEETCODE_CALENDAR_FALLBACK,
         }),
       )
       .finally(() => setLcLoading(false));
@@ -685,7 +878,7 @@ export function EngineeringActivitySection() {
 
                 {/* Right side: LeetCode Submission Heatmap */}
                 <div className="lg:col-span-7">
-                  <LeetCodeHeatmap calendar={calendar} />
+                  <LeetCodeHeatmap calendar={calendar} activeDays={activeDays} streak={streak} />
                 </div>
               </div>
             )}

@@ -3,6 +3,10 @@
 // Single source of truth for all portfolio content.
 // ============================================================
 
+import leetcodeSnapshot from "./leetcode-snapshot.json";
+
+export const LEETCODE_CALENDAR_FALLBACK: Record<string, number> = leetcodeSnapshot;
+
 export const PROFILE = {
   name: "Ketan Goyal",
   title: "Full-Stack Developer",
@@ -348,11 +352,59 @@ export const PROJECT_CATEGORIES: ProjectCategory[] = Array.from(
 ) as ProjectCategory[];
 
 export const SKILLS = {
-  Languages: ["C", "C++", "Java", "Python", "TypeScript", "SQL", "Solidity"],
-  Frontend: ["React.js", "Next.js", "TypeScript"],
-  "Backend & APIs": ["Node.js", "Express.js", "Spring Boot", "Java"],
-  "Databases & ORM": ["PostgreSQL", "MongoDB", "Prisma", "SQL"],
-  "DevOps & Systems": ["Docker", "C", "C++"],
+  Languages: [
+    "Java",
+    "C++",
+    "C",
+    "TypeScript",
+    "JavaScript",
+    "Python",
+    "SQL",
+    "Solidity",
+  ],
+  "Frontend & Mobile": [
+    "React.js",
+    "Next.js",
+    "React Native",
+    "Tailwind CSS",
+    "TypeScript",
+    "HTML5 / CSS3",
+  ],
+  "Backend & Systems": [
+    "Node.js",
+    "Express.js",
+    "Spring Boot",
+    "REST APIs",
+    "System Design",
+    "Microservices",
+  ],
+  "Distributed Systems & Queues": [
+    "Apache Kafka",
+    "Redis",
+    "BullMQ",
+    "Nginx",
+    "WebSockets",
+    "Socket.io",
+    "WebRTC",
+  ],
+  "Databases & DevOps": [
+    "PostgreSQL",
+    "MongoDB",
+    "Prisma",
+    "Docker",
+    "Prometheus",
+    "Grafana",
+    "Loki",
+    "Git",
+  ],
+  "Web3 & Machine Learning": [
+    "Solidity",
+    "Ethereum",
+    "Web3.js",
+    "Machine Learning",
+    "Python",
+    "IPFS (Pinata)",
+  ],
 };
 
 export const TECHNICAL_INTERESTS = [

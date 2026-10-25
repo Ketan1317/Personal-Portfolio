@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { cn } from "@/lib/utils";
 
@@ -8,27 +8,12 @@ interface MetallicSculpture3DProps {
   className?: string;
 }
 
-function checkWebGL(): boolean {
-  if (typeof window === "undefined") return false;
-  try {
-    const canvas = document.createElement("canvas");
-    return Boolean(
-      window.WebGLRenderingContext &&
-        (canvas.getContext("webgl") || canvas.getContext("experimental-webgl")),
-    );
-  } catch {
-    return false;
-  }
-}
-
 export function MetallicSculpture3D({
   className,
 }: MetallicSculpture3DProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [webGLSupported] = useState(checkWebGL);
 
   useEffect(() => {
-    if (!webGLSupported) return;
     const container = containerRef.current;
     if (!container) return;
 
@@ -682,9 +667,7 @@ export function MetallicSculpture3D({
       renderer.dispose();
       renderer.domElement.remove();
     };
-  }, [webGLSupported]);
-
-  if (!webGLSupported) return null;
+  }, []);
 
   return (
     <div
