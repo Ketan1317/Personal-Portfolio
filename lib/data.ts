@@ -457,7 +457,7 @@ export const EXPERIENCE = [
 
 export const ACHIEVEMENTS = [
   {
-    title: "600+ DSA Problems Solved",
+    title: "1000+ DSA Problems Solved",
     description:
       "Consistent problem-solving covering graphs, dynamic programming, tries, and core algorithm patterns across competitive platforms.",
     icon: "code",

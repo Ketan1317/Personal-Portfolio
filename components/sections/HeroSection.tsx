@@ -84,7 +84,7 @@ export function HeroSection() {
             <div className="grid grid-cols-3 gap-4 pt-3 border-t border-border-subtle/60 max-w-lg">
               <div className="space-y-0.5">
                 <div className="text-2xl sm:text-3xl font-bold text-text-primary font-mono">
-                  600+
+                  1000+
                 </div>
                 <div className="label text-[11px] text-text-tertiary">
                   DSA SOLVED
