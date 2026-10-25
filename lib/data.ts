@@ -416,22 +416,7 @@ export const TECHNICAL_INTERESTS = [
   "Software Mechanics & Runtime Internals",
 ];
 
-export const PERSONAL_INTERESTS = [
-  {
-    title: "Formula 1",
-    category: "Motorsport",
-    description:
-      "Race weekends, fierce rivalries, team strategies, and the thrill of watching every lap unfold.",
-    tags: ["F1", "Race Weekends"],
-  },
-  {
-    title: "Marvel",
-    category: "Movies & Entertainment",
-    description:
-      "From iconic superheroes to epic storylines, I love exploring the Marvel Universe and its unforgettable characters.",
-    tags: ["MCU", "Superheroes"],
-  },
-];
+
 
 export const EDUCATION = [
   {

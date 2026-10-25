@@ -7,7 +7,6 @@ import {
   ACHIEVEMENTS,
   CERTIFICATES,
   BADGES,
-  PERSONAL_INTERESTS,
 } from "@/lib/data";
 import {
   GraduationCap,
@@ -203,44 +202,7 @@ export function AboutSection() {
               </div>
             </div>
 
-            {/* Genuine Personal Interests: Marvel & Formula 1 */}
-            <div>
-              <h3 className="label text-text-tertiary mb-5 flex items-center gap-2">
-                <Compass size={13} className="text-[#C6A76A]" />
-                BEYOND THE CODE // PERSONAL INTERESTS
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {PERSONAL_INTERESTS.map((interest) => (
-                  <div
-                    key={interest.title}
-                    className="p-5 rounded-2xl border border-border-default/80 bg-bg-surface hover:border-[#C6A76A]/40 transition-all duration-200 flex flex-col justify-between space-y-3 shadow-xs hover:shadow-sm"
-                  >
-                    <div className="space-y-1.5">
-                      <span className="text-[10px] font-mono uppercase tracking-widest text-[#C6A76A] font-semibold block">
-                        {interest.category}
-                      </span>
-                      <h4 className="font-bold text-text-primary text-sm sm:text-base tracking-tight">
-                        {interest.title}
-                      </h4>
-                      <p className="text-xs text-text-secondary leading-relaxed">
-                        {interest.description}
-                      </p>
-                    </div>
-
-                    <div className="flex flex-wrap gap-1.5 pt-1">
-                      {interest.tags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-bg-elevated text-text-secondary border border-border-subtle"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+           
           </div>
 
           {/* Right Column (5 cols): Verified Achievements, Hackathon Certificates & Open Source Badges */}
